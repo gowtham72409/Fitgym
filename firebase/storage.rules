@@ -1,0 +1,28 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // User private directory: users/{userId}/**
+    match /users/{userId}/{allPaths=**} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Specific food scan rules with file size check
+    match /users/{userId}/food-scans/{scanId} {
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId
+                   && request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Profile photos
+    match /users/{userId}/profile/{fileName} {
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

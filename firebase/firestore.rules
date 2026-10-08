@@ -1,0 +1,107 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && (
+        request.auth.uid == resource.data.user_id ||
+        request.auth.uid == request.resource.data.user_id
+      );
+    }
+
+    // User profile document
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Fitness profiles
+    match /fitness_profiles/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // 7-day Diet plans
+    match /diet_plans/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // 7-day Workout plans
+    match /workout_plans/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Nutrition Logs & Food Scans
+    match /nutrition_logs/{scanId} {
+      allow read, update, delete: if isDocOwner();
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+    }
+
+    // Outdoor GPS Activities
+    match /activities/{activityId} {
+      allow read, update, delete: if isDocOwner();
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+    }
+
+    // Daily Challenges
+    match /challenges/{challengeId} {
+      allow read, update, delete: if isDocOwner();
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+    }
+
+    match /challenge_history/{historyId} {
+      allow read, delete: if isDocOwner();
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+    }
+
+    // Daily Check-ins & Water Logs
+    match /daily_checkins/{checkinId} {
+      allow read, update, delete: if isDocOwner();
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+    }
+
+    // Weight tracking logs
+    match /weight_history/{weightId} {
+      allow read, delete: if isDocOwner();
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+    }
+
+    // Daily completed history
+    match /daily_history/{historyId} {
+      allow read, delete: if isDocOwner();
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+    }
+
+    // Monthly summaries
+    match /monthly_summaries/{summaryId} {
+      allow read: if isDocOwner();
+      allow create, update: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+    }
+
+    // Sara AI chat turns
+    match /chat_history/{chatId} {
+      allow read, delete: if isDocOwner();
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+    }
+
+    // User settings & dashboard preferences
+    match /settings/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /dashboard_preferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /notification_preferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}
