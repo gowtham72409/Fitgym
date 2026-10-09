@@ -3,10 +3,12 @@ const getDefaultApiUrl = () => {
     const raw = import.meta.env.VITE_API_URL;
     return raw.endsWith('/api') ? raw : `${raw.replace(/\/$/, '')}/api`;
   }
-  if (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return `${window.location.protocol}//${window.location.hostname}:8000/api`;
+  // Local development
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return "http://localhost:8000/api";
   }
-  return "http://localhost:8000/api";
+  // Production Render live backend URL
+  return "https://fitgym-zr0u.onrender.com/api";
 };
 
 const ENV_API_URL = getDefaultApiUrl();
@@ -15,8 +17,8 @@ const BACKEND_URL = ENV_API_URL;
 // Fallback URLs to try if primary fails (only on NETWORK errors)
 const FALLBACK_URLS = [
   ENV_API_URL,
-  "http://localhost:8000/api",
-  "http://127.0.0.1:8000/api"
+  "https://fitgym-zr0u.onrender.com/api",
+  "http://localhost:8000/api"
 ];
 
 // Check if running in native Capacitor app
@@ -47,7 +49,7 @@ async function nativeRequest(url, options = {}) {
 
 async function webRequest(url, options = {}) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000);
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
 
   const res = await fetch(url, {
     ...options,
