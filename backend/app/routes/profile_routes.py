@@ -48,10 +48,37 @@ async def update_profile(data: Dict[str, Any], user: dict = Depends(get_current_
     
     # Securely enforce user_id
     data["user_id"] = uid
-    if "starting_weight_kg" not in existing and "weight_kg" in data:
-        data["starting_weight_kg"] = data["weight_kg"]
+    weight_val = data.get("current_weight_kg") or data.get("weight_kg")
+    if weight_val:
+        data["weight_kg"] = weight_val
+        data["current_weight_kg"] = weight_val
+        if "starting_weight_kg" not in existing:
+            data["starting_weight_kg"] = weight_val
 
     merged = {**existing, **data}
+
+    # Calculate fitness metrics and auto-populate targets if height and weight exist
+    raw_w = merged.get("weight_kg")
+    raw_h = merged.get("height_cm")
+    if raw_w and raw_h:
+        metrics = calculate_fitness_metrics(merged)
+        if metrics.get("bmi"):
+            merged["bmi"] = metrics["bmi"]
+            merged["bmi_category"] = metrics["bmi_category"]
+        if not merged.get("daily_calorie_target") and metrics.get("target_calories"):
+            merged["daily_calorie_target"] = metrics["target_calories"]
+        if not merged.get("daily_protein_target") and metrics.get("target_protein_g"):
+            merged["daily_protein_target"] = metrics["target_protein_g"]
+        if not merged.get("daily_carbs_target") and metrics.get("target_calories"):
+            merged["daily_carbs_target"] = round((metrics["target_calories"] * 0.45) / 4)
+        if not merged.get("daily_fat_target") and metrics.get("target_calories"):
+            merged["daily_fat_target"] = round((metrics["target_calories"] * 0.25) / 9)
+        if not merged.get("daily_fiber_target"):
+            merged["daily_fiber_target"] = 30
+        if not merged.get("daily_burn_target_kcal"):
+            merged["daily_burn_target_kcal"] = 500
+        merged["profile_setup_completed"] = True
+
     saved_profile = save_document("fitness_profiles", uid, merged)
 
     # If name/photo updated, update users collection too

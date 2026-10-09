@@ -20,7 +20,8 @@ import {
   Edit3,
   X,
   Check,
-  Loader2
+  Loader2,
+  User
 } from "lucide-react";
 import { api } from "../api";
 
@@ -135,6 +136,75 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
     water_target_ml: profile?.water_target_ml || 3000,
     step_target: profile?.step_target || 8000
   });
+
+  // Auto-triggered New User Setup Modal state
+  const [showInitialProfileModal, setShowInitialProfileModal] = useState(false);
+  const [savingInitialProfile, setSavingInitialProfile] = useState(false);
+  const [initialProfileForm, setInitialProfileForm] = useState({
+    name: profile?.name || "",
+    age: profile?.age || "",
+    gender: profile?.gender || "Male",
+    height_cm: profile?.height_cm || "",
+    current_weight_kg: profile?.current_weight_kg || profile?.weight_kg || "",
+    target_weight_kg: profile?.target_weight_kg || "",
+    goal: profile?.goal || "Weight loss",
+    activity_level: profile?.activity_level || "Moderate",
+    dietary_preference: profile?.dietary_preference || "Non-Vegetarian",
+    daily_burn_target_kcal: profile?.daily_burn_target_kcal || ""
+  });
+
+  // Automatically pop up if user has not entered their height and weight yet!
+  useEffect(() => {
+    if (profile) {
+      const isMissingMetrics = !profile.height_cm || (!profile.current_weight_kg && !profile.weight_kg);
+      if (isMissingMetrics) {
+        setShowInitialProfileModal(true);
+      }
+      setInitialProfileForm((prev) => ({
+        ...prev,
+        name: profile.name || prev.name,
+        age: profile.age || prev.age,
+        gender: profile.gender || prev.gender,
+        height_cm: profile.height_cm || prev.height_cm,
+        current_weight_kg: profile.current_weight_kg || profile.weight_kg || prev.current_weight_kg,
+        target_weight_kg: profile.target_weight_kg || prev.target_weight_kg,
+        goal: profile.goal || prev.goal,
+        activity_level: profile.activity_level || prev.activity_level,
+        dietary_preference: profile.dietary_preference || prev.dietary_preference,
+        daily_burn_target_kcal: profile.daily_burn_target_kcal || prev.daily_burn_target_kcal
+      }));
+    }
+  }, [profile]);
+
+  const handleSaveInitialProfile = async (e) => {
+    e.preventDefault();
+    if (!initialProfileForm.height_cm || !initialProfileForm.current_weight_kg) {
+      alert("Please enter your Height and Current Weight to calculate your personalized targets.");
+      return;
+    }
+    try {
+      setSavingInitialProfile(true);
+      const payload = {
+        ...initialProfileForm,
+        name: initialProfileForm.name.trim() || profile?.name || "Athlete",
+        height_cm: Number(initialProfileForm.height_cm),
+        weight_kg: Number(initialProfileForm.current_weight_kg),
+        current_weight_kg: Number(initialProfileForm.current_weight_kg),
+        target_weight_kg: initialProfileForm.target_weight_kg ? Number(initialProfileForm.target_weight_kg) : Number(initialProfileForm.current_weight_kg),
+        age: initialProfileForm.age ? Number(initialProfileForm.age) : 25,
+        daily_burn_target_kcal: initialProfileForm.daily_burn_target_kcal ? Number(initialProfileForm.daily_burn_target_kcal) : 500,
+        profile_setup_completed: true
+      };
+      await api.updateProfile(payload);
+      if (onUpdateProfile) await onUpdateProfile();
+      await loadDashboardData();
+      setShowInitialProfileModal(false);
+    } catch (err) {
+      alert("Failed to save profile: " + err.message);
+    } finally {
+      setSavingInitialProfile(false);
+    }
+  };
 
   useEffect(() => {
     if (profile) {
@@ -344,6 +414,56 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
           </span>
         </div>
       </div>
+
+      {/* ACTION BANNER FOR INITIAL MEASUREMENTS SETUP */}
+      {(!heightCm || !currentW) && (
+        <div 
+          onClick={() => setShowInitialProfileModal(true)}
+          style={{
+            padding: "16px 20px",
+            borderRadius: "16px",
+            background: "linear-gradient(135deg, rgba(255, 51, 75, 0.18) 0%, rgba(20, 24, 41, 0.98) 100%)",
+            border: "1px solid rgba(255, 51, 75, 0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            cursor: "pointer",
+            boxShadow: "0 4px 20px rgba(255, 51, 75, 0.15)",
+            gap: "14px",
+            flexWrap: "wrap"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <div style={{ width: "40px", height: "40px", borderRadius: "12px", background: "rgba(255, 51, 75, 0.25)", border: "1px solid rgba(255, 51, 75, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ff334b" }}>
+              <Sparkles size={20} />
+            </div>
+            <div>
+              <p style={{ margin: 0, fontWeight: "900", color: "#ffffff", fontSize: "0.95rem" }}>
+                Complete Profile Setup (Height, Weight & Fitness Goals)
+              </p>
+              <p style={{ margin: "3px 0 0 0", color: "#94a3b8", fontSize: "0.78rem" }}>
+                உங்களின் உயரம், எடை கொடுத்து AI Targets & BMI கணக்கிடுங்கள் ➜
+              </p>
+            </div>
+          </div>
+          <button 
+            type="button"
+            style={{
+              padding: "9px 18px",
+              borderRadius: "10px",
+              background: "#ff334b",
+              border: "none",
+              color: "#ffffff",
+              fontWeight: "900",
+              fontSize: "0.84rem",
+              cursor: "pointer",
+              boxShadow: "0 4px 14px rgba(255, 51, 75, 0.4)"
+            }}
+          >
+            Enter Details
+          </button>
+        </div>
+      )}
 
       {/* 2. BODY MEASUREMENT METRICS CARD ROW */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
@@ -995,6 +1115,306 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
                 >
                   {savingGoals ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
                   <span>Save Custom Goals</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* AUTO NEW USER INITIAL PROFILE SETUP MODAL */}
+      {showInitialProfileModal && (
+        <div className="modal-overlay" style={{ zIndex: 1200, backdropFilter: "blur(10px)", background: "rgba(0, 0, 0, 0.82)" }}>
+          <div 
+            className="modal-content" 
+            style={{ 
+              maxWidth: "580px", 
+              maxHeight: "92vh", 
+              overflowY: "auto",
+              background: "linear-gradient(145deg, #131728 0%, #0b0d18 100%)",
+              border: "1px solid rgba(255, 51, 75, 0.4)",
+              boxShadow: "0 24px 70px rgba(0, 0, 0, 0.95), 0 0 40px rgba(255, 51, 75, 0.2)",
+              padding: "26px",
+              borderRadius: "24px"
+            }}
+          >
+            {/* Header with Welcome badge */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
+              <div>
+                <div 
+                  style={{ 
+                    display: "inline-flex", 
+                    alignItems: "center", 
+                    gap: "6px", 
+                    padding: "4px 12px", 
+                    borderRadius: "100px", 
+                    background: "rgba(255, 51, 75, 0.15)", 
+                    border: "1px solid rgba(255, 51, 75, 0.35)",
+                    color: "#ff334b",
+                    fontSize: "0.76rem",
+                    fontWeight: "800",
+                    marginBottom: "8px"
+                  }}
+                >
+                  <Sparkles size={14} /> NEW ATHLETE SETUP
+                </div>
+                <h2 style={{ fontSize: "1.4rem", fontWeight: "900", color: "#ffffff", margin: 0 }}>
+                  Build Your Fitness Profile
+                </h2>
+                <p style={{ fontSize: "0.82rem", color: "#94a3b8", margin: "4px 0 0 0" }}>
+                  உங்களின் உடல் அளவீடுகளை உள்ளிட்டு AI Targets கணக்கிடுங்கள்
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowInitialProfileModal(false)}
+                style={{ 
+                  background: "rgba(255, 255, 255, 0.06)", 
+                  border: "1px solid rgba(255, 255, 255, 0.1)", 
+                  color: "#94a3b8", 
+                  cursor: "pointer", 
+                  padding: "6px",
+                  borderRadius: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveInitialProfile} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Row 1: Name & Age */}
+              <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: "800", color: "#cbd5e1", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <User size={14} color="#8c9eff" /> Full Name (பெயர்)
+                  </label>
+                  <input
+                    type="text"
+                    value={initialProfileForm.name}
+                    onChange={(e) => setInitialProfileForm({ ...initialProfileForm, name: e.target.value })}
+                    placeholder="e.g. Gowtham"
+                    style={{ width: "100%", marginTop: "6px", padding: "11px 14px", background: "#171c30", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px", color: "#fff", fontWeight: "600", fontSize: "0.9rem" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: "800", color: "#cbd5e1" }}>
+                    Age (வயது)
+                  </label>
+                  <input
+                    type="number"
+                    min="12"
+                    max="100"
+                    value={initialProfileForm.age}
+                    onChange={(e) => setInitialProfileForm({ ...initialProfileForm, age: e.target.value })}
+                    placeholder="25"
+                    style={{ width: "100%", marginTop: "6px", padding: "11px 14px", background: "#171c30", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px", color: "#fff", fontWeight: "600", fontSize: "0.9rem" }}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Gender Selection */}
+              <div>
+                <label style={{ fontSize: "0.78rem", fontWeight: "800", color: "#cbd5e1", marginBottom: "6px", display: "block" }}>
+                  Gender (பாலினம்)
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                  {["Male", "Female", "Other"].map((gen) => (
+                    <button
+                      type="button"
+                      key={gen}
+                      onClick={() => setInitialProfileForm({ ...initialProfileForm, gender: gen })}
+                      style={{
+                        padding: "9px",
+                        borderRadius: "10px",
+                        border: initialProfileForm.gender === gen ? "1px solid #ff334b" : "1px solid rgba(255,255,255,0.08)",
+                        background: initialProfileForm.gender === gen ? "rgba(255, 51, 75, 0.15)" : "#171c30",
+                        color: initialProfileForm.gender === gen ? "#ff334b" : "#94a3b8",
+                        fontWeight: "700",
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                        transition: "all 0.15s"
+                      }}
+                    >
+                      {gen}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Row 3: Height, Current Weight, Target Weight */}
+              <div style={{ background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.08)", padding: "14px", borderRadius: "16px" }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#8c9eff", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: "10px" }}>
+                  Body Measurements (உடல் அளவீடுகள்)
+                </span>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label style={{ fontSize: "0.76rem", fontWeight: "700", color: "var(--brand-cyan)", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Ruler size={13} /> Height (cm)
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="100"
+                      max="250"
+                      placeholder="175"
+                      value={initialProfileForm.height_cm}
+                      onChange={(e) => setInitialProfileForm({ ...initialProfileForm, height_cm: e.target.value })}
+                      style={{ width: "100%", marginTop: "6px", padding: "10px", background: "#131726", border: "1px solid rgba(6, 182, 212, 0.3)", borderRadius: "10px", color: "#fff", fontWeight: "700" }}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.76rem", fontWeight: "700", color: "#8c9eff", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Scale size={13} /> Weight (kg)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="30"
+                      max="300"
+                      placeholder="78.5"
+                      value={initialProfileForm.current_weight_kg}
+                      onChange={(e) => setInitialProfileForm({ ...initialProfileForm, current_weight_kg: e.target.value })}
+                      style={{ width: "100%", marginTop: "6px", padding: "10px", background: "#131726", border: "1px solid rgba(140, 158, 255, 0.3)", borderRadius: "10px", color: "#fff", fontWeight: "700" }}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.76rem", fontWeight: "700", color: "#10b981", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Target size={13} /> Target (kg)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="30"
+                      max="300"
+                      placeholder="72.0"
+                      value={initialProfileForm.target_weight_kg}
+                      onChange={(e) => setInitialProfileForm({ ...initialProfileForm, target_weight_kg: e.target.value })}
+                      style={{ width: "100%", marginTop: "6px", padding: "10px", background: "#131726", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "10px", color: "#fff", fontWeight: "700" }}
+                    />
+                  </div>
+                </div>
+
+                {/* Live BMI Preview inside modal */}
+                {initialProfileForm.height_cm && initialProfileForm.current_weight_kg && (
+                  <div style={{ marginTop: "12px", padding: "8px 12px", borderRadius: "10px", background: "rgba(88, 101, 242, 0.12)", border: "1px solid rgba(88, 101, 242, 0.25)", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.78rem" }}>
+                    <span style={{ color: "#cbd5e1" }}>
+                      Estimated BMI: <strong style={{ color: "#ffffff" }}>
+                        {(Number(initialProfileForm.current_weight_kg) / ((Number(initialProfileForm.height_cm) / 100) ** 2)).toFixed(1)}
+                      </strong>
+                    </span>
+                    {initialProfileForm.target_weight_kg && (
+                      <span style={{ color: "#34d399", fontWeight: "700" }}>
+                        Goal Diff: {Math.abs(+(Number(initialProfileForm.current_weight_kg) - Number(initialProfileForm.target_weight_kg)).toFixed(1))} kg
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Row 4: Primary Fitness Goal */}
+              <div>
+                <label style={{ fontSize: "0.78rem", fontWeight: "800", color: "#cbd5e1", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  <Dumbbell size={14} color="#ff334b" /> Primary Goal (முக்கிய உடற்பயிற்சி இலக்கு)
+                </label>
+                <select
+                  value={initialProfileForm.goal}
+                  onChange={(e) => setInitialProfileForm({ ...initialProfileForm, goal: e.target.value })}
+                  style={{ width: "100%", padding: "11px 14px", background: "#171c30", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px", color: "#fff", fontWeight: "700", fontSize: "0.85rem" }}
+                >
+                  <option value="Weight loss">Weight Loss & Fat Burn (எடை குறைப்பு)</option>
+                  <option value="Muscle building">Muscle Building & Hypertrophy (தசை வளர்ச்சி)</option>
+                  <option value="General fitness">General Fitness & Athleticism (ஆரோக்கியம்)</option>
+                  <option value="Endurance">Cardio Endurance & Stamina (தாங்குதிறன்)</option>
+                </select>
+              </div>
+
+              {/* Row 5: Activity Level & Dietary Preference */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: "800", color: "#cbd5e1", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                    <Activity size={14} color="#f59e0b" /> Activity Level
+                  </label>
+                  <select
+                    value={initialProfileForm.activity_level}
+                    onChange={(e) => setInitialProfileForm({ ...initialProfileForm, activity_level: e.target.value })}
+                    style={{ width: "100%", padding: "11px 12px", background: "#171c30", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px", color: "#fff", fontWeight: "600", fontSize: "0.82rem" }}
+                  >
+                    <option value="Sedentary">Sedentary (Little/no exercise)</option>
+                    <option value="Light">Light (1-3 days/week)</option>
+                    <option value="Moderate">Moderate (3-5 days/week)</option>
+                    <option value="Active">Very Active (6-7 days/week)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: "800", color: "#cbd5e1", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                    <Utensils size={14} color="#10b981" /> Diet Preference
+                  </label>
+                  <select
+                    value={initialProfileForm.dietary_preference}
+                    onChange={(e) => setInitialProfileForm({ ...initialProfileForm, dietary_preference: e.target.value })}
+                    style={{ width: "100%", padding: "11px 12px", background: "#171c30", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px", color: "#fff", fontWeight: "600", fontSize: "0.82rem" }}
+                  >
+                    <option value="Non-Vegetarian">Non-Vegetarian (அசைவம்)</option>
+                    <option value="Vegetarian">Vegetarian (சைவம்)</option>
+                    <option value="Eggetarian">Eggetarian (முட்டை மட்டும்)</option>
+                    <option value="Vegan">Vegan (முழு தாவர உணவு)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: "flex", gap: "12px", marginTop: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowInitialProfileModal(false)}
+                  style={{
+                    flex: "0 0 100px",
+                    padding: "13px",
+                    background: "none",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    borderRadius: "12px",
+                    color: "#94a3b8",
+                    fontWeight: "700",
+                    fontSize: "0.88rem",
+                    cursor: "pointer"
+                  }}
+                >
+                  Skip
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingInitialProfile}
+                  className="red-btn"
+                  style={{
+                    flex: 1,
+                    padding: "13px",
+                    borderRadius: "12px",
+                    fontWeight: "900",
+                    fontSize: "0.92rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    cursor: savingInitialProfile ? "not-allowed" : "pointer",
+                    boxShadow: "0 6px 20px rgba(255, 51, 75, 0.4)"
+                  }}
+                >
+                  {savingInitialProfile ? (
+                    <>
+                      <Loader2 size={18} className="spin" /> Calculating Targets...
+                    </>
+                  ) : (
+                    <>
+                      <Check size={18} /> Save & Calculate My Targets
+                    </>
+                  )}
                 </button>
               </div>
             </form>
