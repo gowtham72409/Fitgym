@@ -51,22 +51,24 @@ async def register_account(req: RegisterRequest):
     if clean_name.lower() == "athlete":
         clean_name = "Gowtham"
 
-    user_id = f"user_{abs(hash(clean_email)) % 1000000}"
+    user_id = f"user_{hashlib.sha256(clean_email.encode('utf-8')).hexdigest()[:12]}"
 
     # Check if user already exists
     existing = get_document("users", user_id, user_id=user_id)
-    if existing and clean_email in USER_PASSWORDS:
+    if existing and (existing.get("password_hash") or clean_email in USER_PASSWORDS):
         # User already registered
         raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in.")
 
-    # Store hashed password
-    USER_PASSWORDS[clean_email] = hash_pw(pw)
+    # Store hashed password in memory and persistent user record
+    hashed = hash_pw(pw)
+    USER_PASSWORDS[clean_email] = hashed
 
     user_record = {
         "uid": user_id,
         "user_id": user_id,
         "name": clean_name,
         "email": clean_email,
+        "password_hash": hashed,
         "photo_url": "",
         "xp": 125,
         "level": 2,
@@ -118,18 +120,27 @@ async def login_with_password(req: LoginPasswordRequest):
     if not pw:
         raise HTTPException(status_code=400, detail="Please enter your password.")
 
-    user_id = f"user_{abs(hash(clean_email)) % 1000000}"
+    user_id = f"user_{hashlib.sha256(clean_email.encode('utf-8')).hexdigest()[:12]}"
+    user_record = get_document("users", user_id, user_id=user_id)
 
     # Verify password if user registered with password
-    stored_hash = USER_PASSWORDS.get(clean_email)
+    stored_hash = None
+    if user_record and user_record.get("password_hash"):
+        stored_hash = user_record.get("password_hash")
+    elif clean_email in USER_PASSWORDS:
+        stored_hash = USER_PASSWORDS[clean_email]
+
     if stored_hash:
         if hash_pw(pw) != stored_hash:
             raise HTTPException(status_code=401, detail="Incorrect password. Please try again.")
     else:
-        # If user registered in dev session or demo, accept password and record it
-        USER_PASSWORDS[clean_email] = hash_pw(pw)
+        # First time login or demo user: record password for future logins
+        hashed = hash_pw(pw)
+        USER_PASSWORDS[clean_email] = hashed
+        if user_record:
+            user_record["password_hash"] = hashed
+            save_document("users", user_id, user_record)
 
-    user_record = get_document("users", user_id, user_id=user_id)
     if not user_record:
         user_name = clean_email.split("@")[0].capitalize() or "Gowtham"
         if user_name.lower() == "athlete":

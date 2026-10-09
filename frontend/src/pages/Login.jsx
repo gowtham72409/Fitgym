@@ -41,6 +41,7 @@ export function Login({ onLoginSuccess }) {
     try {
       const res = await api.loginWithPassword(loginEmail, loginPassword);
       if (res.access_token) {
+        localStorage.setItem("fitquest_token", res.access_token);
         const candidate = res.user?.name || res.profile?.name || localStorage.getItem("fitquest_user_name");
         const resolvedName = (candidate && candidate.toLowerCase() !== "athlete") 
           ? candidate 

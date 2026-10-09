@@ -142,9 +142,17 @@ export default function App() {
     setProfile(null);
   };
 
-  // 1. NOT AUTHENTICATED -> GO DIRECTLY TO SIGN IN (START PAGE REMOVED)
   if (!token) {
-    return <Login onLoginSuccess={(res) => setToken(res.access_token)} />;
+    return (
+      <Login
+        onLoginSuccess={(res) => {
+          if (res?.access_token) {
+            localStorage.setItem("fitquest_token", res.access_token);
+            setToken(res.access_token);
+          }
+        }}
+      />
+    );
   }
 
   // 2. LOADING PROFILE
