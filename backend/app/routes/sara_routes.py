@@ -3,18 +3,19 @@ from typing import Dict, Any, List
 from fastapi import APIRouter, Depends, HTTPException
 from app.auth import get_current_user
 from app.firestore import get_document, save_document, list_documents
-from app.ai import chat_with_sara, calculate_fitness_metrics, generate_workout_plan
+from app.ai import chat_with_agent, chat_with_sara, calculate_fitness_metrics, generate_workout_plan
 
 router = APIRouter(prefix="/api/sara", tags=["sara"])
 
 @router.post("")
 async def interact_with_sara(data: Dict[str, Any], user: dict = Depends(get_current_user)):
     """
-    Context-aware Sara AI conversation:
-    Answers user questions, provides wellness guidance, and performs live actions.
+    Context-aware Multi-Agent conversation (Sara, Chef Macro, Coach Marcus, Dr. Zen, Coach Blaze).
+    Answers user questions, provides domain guidance, and performs live actions.
     """
     uid = user["uid"]
     user_msg = data.get("message", "").strip()
+    agent_id = data.get("agent_id", "sara")
     if not user_msg:
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
@@ -34,9 +35,10 @@ async def interact_with_sara(data: Dict[str, Any], user: dict = Depends(get_curr
         "recent_activities": recent_activities
     }
 
-    # Call AI
-    sara_result = chat_with_sara(user_msg, context)
+    # Call Multi-Agent AI
+    sara_result = chat_with_agent(user_msg, context, agent_id=agent_id)
     reply = sara_result.get("reply", "I'm right here with you on your fitness journey!")
+    agent_name = sara_result.get("agent_name", "Sara")
     action = sara_result.get("action", "NONE")
     action_payload = sara_result.get("action_payload", {})
 
@@ -70,6 +72,8 @@ async def interact_with_sara(data: Dict[str, Any], user: dict = Depends(get_curr
 
     return {
         "reply": reply,
+        "agent_id": agent_id,
+        "agent_name": agent_name,
         "action": action,
         "action_payload": action_payload,
         "created_at": time.time()

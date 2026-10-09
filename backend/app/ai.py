@@ -675,46 +675,137 @@ def analyze_food_image(image_bytes: bytes, quantity_kg: float, meal_type: str = 
     }
 
 # =====================================================================
-# SARA AI ASSISTANT (CONTEXT-AWARE FITNESS AGENT)
+# MULTI-AGENT AI SYSTEM & LLAMA 3 (GROQ) ORCHESTRATOR
 # =====================================================================
-def chat_with_sara(user_message: str, context: Dict[str, Any]) -> Dict[str, Any]:
+AGENT_PERSONAS = {
+    "sara": {
+        "name": "Sara",
+        "title": "Master Fitness Copilot",
+        "role_prompt": """You are Sara, FitQuest AI's master fitness and wellness copilot.
+You speak in a warm, encouraging, and clear voice. You coordinate overall fitness, workout habits, and nutrition.
+Keep your spoken responses natural, empathetic, and concise for voice conversation."""
+    },
+    "nutrition": {
+        "name": "Chef Macro",
+        "title": "Nutrition & Meal Prep Agent",
+        "role_prompt": """You are Chef Macro, an elite culinary sports nutritionist.
+You specialize in high-protein meal planning, Indian & international fitness recipes, smart grocery substitutions, and flexible dieting without hunger.
+When asked for meal ideas, suggest realistic foods with macro breakdowns (Calories, Protein, Carbs, Fat).
+Keep responses clear, appetizing, and actionable for voice conversation."""
+    },
+    "workout": {
+        "name": "Coach Marcus",
+        "title": "Personal Trainer & Form Coach",
+        "role_prompt": """You are Coach Marcus, a dedicated, high-performance strength & conditioning trainer.
+You specialize in exercise form, progressive overload, rep-ranges, muscle hypertrophy, and joint-friendly exercise substitutions.
+If a user mentions joint discomfort or lack of equipment, immediately provide safe, effective exercise alternatives (e.g., knee-friendly or dumbbell swaps).
+Keep responses motivating, technique-focused, and concise for voice conversation."""
+    },
+    "recovery": {
+        "name": "Dr. Zen",
+        "title": "Sleep, Hydration & Recovery Agent",
+        "role_prompt": """You are Dr. Zen, an expert in athletic recovery, sleep hygiene, and mobility.
+You specialize in reducing muscle soreness (DOMS), optimizing deep sleep, hydration balance, active recovery stretches, and central nervous system recovery.
+Speak with a calming, reassuring, science-backed tone suited for voice conversation."""
+    },
+    "accountability": {
+        "name": "Coach Blaze",
+        "title": "Accountability & Habit Streak Coach",
+        "role_prompt": """You are Coach Blaze, a fiery, energetic, no-excuses habit & streak motivator.
+You help users smash their daily calorie burn targets, maintain workout streaks, and overcome workout procrastination.
+Celebrate wins with electric energy! Push the user to get moving when they are close to their daily burn target.
+Keep responses snappy, inspiring, and high-energy for voice conversation!"""
+    }
+}
+
+def query_llama_groq(system_prompt: str, user_message: str) -> Optional[Dict[str, Any]]:
+    """Calls Meta Llama 3 via Groq Cloud API for ultra-fast <300ms inference."""
+    if not settings.GROQ_API_KEY:
+        return None
+    try:
+        import urllib.request
+        import json
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.6,
+            "max_tokens": 400
+        }
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {settings.GROQ_API_KEY}"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            raw = resp.read().decode("utf-8")
+            parsed = json.loads(raw)
+            content = parsed["choices"][0]["message"]["content"]
+            return extract_json(content)
+    except Exception as e:
+        logger.warning(f"Groq Llama 3 call failed: {e}")
+        return None
+
+def chat_with_agent(user_message: str, context: Dict[str, Any], agent_id: str = "sara") -> Dict[str, Any]:
     """
-    Sara answers user questions using their full profile, diet, workout, activities, and goals.
-    Can also trigger actionable plan modifications.
+    Context-aware multi-agent chat engine:
+    Dispatches to the specialized AI agent persona (Sara, Chef Macro, Coach Marcus, Dr. Zen, Coach Blaze).
+    Utilizes Meta Llama 3 via Groq (fastest) or Google Gemini Flash, with intelligent domain fallbacks.
     """
+    persona = AGENT_PERSONAS.get(agent_id, AGENT_PERSONAS["sara"])
+    agent_name = persona["name"]
+    role_prompt = persona["role_prompt"]
+
     user_name = context.get("profile", {}).get("name", "Athlete")
     goal = context.get("profile", {}).get("goal", "general_fitness")
     metrics = context.get("metrics", {})
     recent_workout = context.get("workout", {}).get("plan_name", "Active Program")
 
     system_prompt = f"""
-    You are Sara, FitQuest AI's warm, motivating, expert personal fitness and nutrition coach.
-    You speak in a friendly, encouraging, and actionable tone.
-    You are talking to {user_name}.
+    {role_prompt}
+    
+    You are speaking with: {user_name}.
     User's Fitness Goal: {goal}.
     Daily Calorie Target: {metrics.get('target_calories', 2000)} kcal.
     Daily Protein Target: {metrics.get('target_protein_g', 120)}g.
-    Current Program: {recent_workout}.
+    Current Workout Program: {recent_workout}.
 
     Instructions:
-    1. Respond concisely and empathetically.
-    2. If the user asks to modify their meal, workout duration, or switch to home/gym, determine the action and return action metadata.
-    3. Action types allowed:
-       - "NONE": general conversational advice
-       - "REPLACE_MEAL": suggest 3 alternative meals
+    1. Stay strictly in character as {agent_name} ({persona['title']}).
+    2. Speak concisely, clearly, and engagingly for real-time speech and voice calls.
+    3. Determine if any user plan modification action should be triggered.
+       Allowed actions:
+       - "NONE": general advice
+       - "REPLACE_MEAL": suggest 3 alternative high-protein meals
        - "SWITCH_WORKOUT_ENVIRONMENT": switch today's workout to "Home" or "Gym"
-       - "ADJUST_WORKOUT_DURATION": change workout duration in minutes
-       - "ADJUST_CALORIES": modify calorie target
-    4. AI SAFETY RULE: Never diagnose medical ailments, recommend extreme diets, or recommend starvation. Advise professional medical consultation if medical questions arise.
+       - "ADJUST_WORKOUT_DURATION": change duration in minutes (e.g. 30, 45, 60)
+       - "ADJUST_CALORIES": change calorie target
+    4. AI SAFETY: Never recommend medical diagnoses or extreme starvation diets.
 
     Respond with ONLY JSON:
     {{
-      "reply": "Your conversational response here...",
+      "reply": "Your conversational response as {agent_name}...",
+      "agent_name": "{agent_name}",
       "action": "NONE" | "REPLACE_MEAL" | "SWITCH_WORKOUT_ENVIRONMENT" | "ADJUST_WORKOUT_DURATION" | "ADJUST_CALORIES",
       "action_payload": {{}}
     }}
     """
 
+    # 1. Try Groq Llama 3 first if key is present (Ultra-fast <300ms)
+    if settings.GROQ_API_KEY:
+        llama_res = query_llama_groq(system_prompt, user_message)
+        if llama_res and "reply" in llama_res:
+            llama_res["agent_name"] = agent_name
+            return llama_res
+
+    # 2. Try Gemini 1.5 Flash
     if settings.GEMINI_API_KEY:
         try:
             model = genai.GenerativeModel("gemini-1.5-flash")
@@ -722,16 +813,70 @@ def chat_with_sara(user_message: str, context: Dict[str, Any]) -> Dict[str, Any]
             response = model.generate_content(full_prompt)
             data = extract_json(response.text)
             if data and "reply" in data:
+                data["agent_name"] = agent_name
                 return data
         except Exception as e:
-            logger.warning(f"Sara Gemini chat failed, using coaching logic: {e}")
+            logger.warning(f"Gemini chat failed for {agent_name}: {e}")
 
-    # Fallback Intelligent Coaching Engine
+    # 3. Intelligent Persona-Specific Fallback Rule Engine
     msg_lower = user_message.lower()
 
+    # Agent: Nutrition (Chef Macro)
+    if agent_id == "nutrition":
+        if "protein" in msg_lower:
+            return {
+                "reply": f"To hit your {metrics.get('target_protein_g', 130)}g protein target, load up on eggs, Greek yogurt, paneer, chicken breast, or lentils. Aim for 30g per meal!",
+                "agent_name": agent_name,
+                "action": "NONE",
+                "action_payload": {}
+            }
+        return {
+            "reply": f"Chef Macro here! For your {goal} goal, focus on eating whole nutrient-dense foods with a protein source at every meal. What recipe or swap do you need?",
+            "agent_name": agent_name,
+            "action": "NONE",
+            "action_payload": {}
+        }
+
+    # Agent: Workout (Coach Marcus)
+    if agent_id == "workout":
+        if "knee" in msg_lower or "pain" in msg_lower:
+            return {
+                "reply": "Coach Marcus here. If your knees feel sensitive, swap heavy barbell squats for Romanian Deadlifts, Bulgarian split squats with light dumbbells, or leg presses with feet placed high. Form always comes first!",
+                "agent_name": agent_name,
+                "action": "NONE",
+                "action_payload": {}
+            }
+        return {
+            "reply": f"Coach Marcus here! Focus on progressive overload today: aim for 3 clean sets with 2 reps in reserve. Are you training at the gym or at home?",
+            "agent_name": agent_name,
+            "action": "NONE",
+            "action_payload": {}
+        }
+
+    # Agent: Recovery (Dr. Zen)
+    if agent_id == "recovery":
+        return {
+            "reply": f"Dr. Zen here. Proper recovery is where muscle growth actually happens. Drink plenty of water today and aim for 7 to 8 hours of quality sleep to recharge your nervous system.",
+            "agent_name": agent_name,
+            "action": "NONE",
+            "action_payload": {}
+        }
+
+    # Agent: Accountability (Coach Blaze)
+    if agent_id == "accountability":
+        burn_goal = metrics.get('daily_burn_target_kcal', 500)
+        return {
+            "reply": f"Coach Blaze in the house! No excuses today—you've got a {burn_goal} calorie burn target to smash! Let's get up, get moving, and keep that streak blazing!",
+            "agent_name": agent_name,
+            "action": "NONE",
+            "action_payload": {}
+        }
+
+    # Default Agent: Sara
     if "breakfast" in msg_lower and ("change" in msg_lower or "replace" in msg_lower or "swap" in msg_lower):
         return {
             "reply": f"Here are 3 high-protein breakfast options tailored to your {goal} goal! Pick any one to replace it in your plan:",
+            "agent_name": "Sara",
             "action": "REPLACE_MEAL",
             "action_payload": {
                 "meal": "Breakfast",
@@ -745,36 +890,27 @@ def chat_with_sara(user_message: str, context: Dict[str, Any]) -> Dict[str, Any]
 
     if "home" in msg_lower and ("workout" in msg_lower or "gym" in msg_lower or "today" in msg_lower):
         return {
-            "reply": "No problem at all! I've switched your workout for today to your customized Home Workout routine. You'll get an awesome sweat in without stepping foot in the gym!",
+            "reply": "No problem! I've switched your workout for today to your customized Home Workout routine. Let's get a great session in!",
+            "agent_name": "Sara",
             "action": "SWITCH_WORKOUT_ENVIRONMENT",
             "action_payload": {"environment": "Home"}
         }
 
     if "gym" in msg_lower and ("switch" in msg_lower or "today" in msg_lower):
         return {
-            "reply": "Awesome! I've loaded up your Gym Workout for today, complete with strength and machine exercises. Let's crush it!",
+            "reply": "Awesome! I've loaded up your Gym Workout for today, complete with strength machines and free weights.",
+            "agent_name": "Sara",
             "action": "SWITCH_WORKOUT_ENVIRONMENT",
             "action_payload": {"environment": "Gym"}
         }
 
-    if ("45 min" in msg_lower or "30 min" in msg_lower or "60 min" in msg_lower) and "workout" in msg_lower:
-        dur = 45 if "45" in msg_lower else (30 if "30" in msg_lower else 60)
-        return {
-            "reply": f"Done! I've adjusted your workout schedule to {dur} minutes. The exercises have been re-calibrated so you still hit your primary muscle stimuli efficiently.",
-            "action": "ADJUST_WORKOUT_DURATION",
-            "action_payload": {"duration_minutes": dur}
-        }
-
-    if "protein" in msg_lower or "how much" in msg_lower:
-        target_p = metrics.get('target_protein_g', 130)
-        return {
-            "reply": f"Based on your profile and {goal} goal, your daily target is {target_p}g of protein. Aim for 25-35g per meal across your breakfast, lunch, snack, and dinner to maximize muscle synthesis and satiety!",
-            "action": "NONE",
-            "action_payload": {}
-        }
-
     return {
-        "reply": f"Hey {user_name}! You're making great progress towards your {goal} goal. Remember, consistency beats intensity every time. What would you like to tweak today—your diet, workout, or daily challenges?",
+        "reply": f"Hey {user_name}! You're making steady progress towards your {goal} goal. What would you like to focus on today—your diet, workout, or recovery?",
+        "agent_name": "Sara",
         "action": "NONE",
         "action_payload": {}
     }
+
+def chat_with_sara(user_message: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    """Backwards-compatible wrapper calling master Sara agent."""
+    return chat_with_agent(user_message, context, agent_id="sara")

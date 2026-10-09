@@ -126,7 +126,7 @@ export const api = {
   getWeightHistory: () => apiRequest('/api/weight/history'),
 
   // Sara AI
-  askSara: (message) => apiRequest('/api/sara', { method: 'POST', body: JSON.stringify({ message }) }),
+  askSara: (message, agent_id = "sara") => apiRequest('/api/sara', { method: 'POST', body: JSON.stringify({ message, agent_id }) }),
   getSaraHistory: () => apiRequest('/api/sara/history'),
 
   // Monthly summary

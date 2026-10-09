@@ -200,7 +200,7 @@ export const api = {
   getMonthlySummary: (month, year) => request(`/monthly-summary${month ? `?month=${month}&year=${year}` : ''}`),
 
   // Sara AI Assistant
-  askSara: (message) => request("/sara", { method: "POST", body: JSON.stringify({ message }) }),
+  askSara: (message, agent_id = "sara") => request("/sara", { method: "POST", body: JSON.stringify({ message, agent_id }) }),
 
   // Settings
   getSettings: () => request("/settings"),

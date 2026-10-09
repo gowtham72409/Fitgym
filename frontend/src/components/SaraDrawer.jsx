@@ -10,32 +10,126 @@ import {
   MicOff, 
   Volume2, 
   VolumeX, 
-  Square,
-  Radio,
-  Phone,
-  PhoneOff
+  Square, 
+  Radio, 
+  Phone, 
+  PhoneOff,
+  Utensils,
+  Dumbbell,
+  Heart,
+  Flame
 } from "lucide-react";
 import { api } from "../api";
 
-// Check Speech Recognition browser support
+// Speech Recognition browser support check
 const SpeechRecognition = typeof window !== "undefined" 
   ? (window.SpeechRecognition || window.webkitSpeechRecognition || null) 
   : null;
 
+// The 5 Specialized FitQuest AI Agents
+export const AI_AGENTS = [
+  {
+    id: "sara",
+    name: "Sara",
+    title: "Master Fitness Copilot",
+    badge: "Master AI",
+    avatarIcon: Bot,
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
+    orbGlow: "rgba(139, 92, 246, 0.75)",
+    greeting: "Hi! I'm Sara, your FitQuest AI master fitness copilot. I can coordinate your workouts, diet, and daily routine. What can I help you with today?",
+    suggested: [
+      "What is my plan for today?",
+      "How much protein should I eat?",
+      "Recommend a 45-min workout",
+      "How do I boost my metabolism?"
+    ]
+  },
+  {
+    id: "nutrition",
+    name: "Chef Macro",
+    title: "Nutrition & Meal Prep Agent",
+    badge: "Diet & Macros",
+    avatarIcon: Utensils,
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+    orbGlow: "rgba(16, 185, 129, 0.75)",
+    greeting: "Hey there! I'm Chef Macro, your culinary sports nutritionist. Let's make hitting your protein targets delicious and effortless!",
+    suggested: [
+      "Suggest a 35g high-protein meal",
+      "Healthy snacks under 200 kcal",
+      "High-protein vegetarian foods",
+      "Swap my breakfast for something quick"
+    ]
+  },
+  {
+    id: "workout",
+    name: "Coach Marcus",
+    title: "Personal Trainer & Form Coach",
+    badge: "Strength & Form",
+    avatarIcon: Dumbbell,
+    color: "#f43f5e",
+    gradient: "linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)",
+    orbGlow: "rgba(244, 63, 94, 0.75)",
+    greeting: "What's up! Coach Marcus here. Let's talk biomechanics, progressive overload, and clean execution. Ready to train?",
+    suggested: [
+      "Knee-friendly squat alternative",
+      "Switch today's workout to Home dumbbells",
+      "How many sets for muscle hypertrophy?",
+      "Safe warm-up routine for shoulders"
+    ]
+  },
+  {
+    id: "recovery",
+    name: "Dr. Zen",
+    title: "Sleep, Hydration & Recovery",
+    badge: "Recovery & Sleep",
+    avatarIcon: Heart,
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)",
+    orbGlow: "rgba(6, 182, 212, 0.75)",
+    greeting: "Welcome. I am Dr. Zen. True physical adaptation happens during rest. How is your body feeling today?",
+    suggested: [
+      "My legs are sore, how to recover faster?",
+      "Bedtime routine for deeper sleep",
+      "How much water should I drink today?",
+      "10-minute active recovery stretch"
+    ]
+  },
+  {
+    id: "accountability",
+    name: "Coach Blaze",
+    title: "Accountability & Habit Streak",
+    badge: "Streaks & Burn",
+    avatarIcon: Flame,
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)",
+    orbGlow: "rgba(245, 158, 11, 0.75)",
+    greeting: "Let's GO! Coach Blaze in your corner. No excuses, no shortcuts! We are here to smash goals and keep streaks alive!",
+    suggested: [
+      "I'm feeling unmotivated today, hype me up!",
+      "How to burn my remaining 250 kcal?",
+      "Give me a 5-minute core burn challenge",
+      "Tips to stay consistent on weekends"
+    ]
+  }
+];
+
 export function SaraDrawer({ isOpen, onClose }) {
+  const [activeAgentId, setActiveAgentId] = useState("sara");
+  const activeAgent = AI_AGENTS.find((a) => a.id === activeAgentId) || AI_AGENTS[0];
+
   const [messages, setMessages] = useState([
     {
       id: "initial-msg",
+      agent_id: "sara",
       sender: "sara",
-      text: "Hi! I'm Sara, your FitQuest AI real-time fitness coach. Tap 'Live Voice Call' to speak with me hands-free in real time, or use the microphone below!",
-      suggested: [
-        "What should I eat today?",
-        "How much protein should I eat?",
-        "Recommend a 45-min workout",
-        "How do I boost my metabolism?"
-      ]
+      agent_name: "Sara",
+      text: AI_AGENTS[0].greeting,
+      suggested: AI_AGENTS[0].suggested
     }
   ]);
+
   const [inputMsg, setInputMsg] = useState("");
   const [loading, setLoading] = useState(false);
   
@@ -59,7 +153,6 @@ export function SaraDrawer({ isOpen, onClose }) {
   const isLoadingRef = useRef(false);
   const accumulatedTranscriptRef = useRef("");
 
-  // Keep refs synced with state
   useEffect(() => {
     isLiveModeRef.current = isLiveCallActive;
   }, [isLiveCallActive]);
@@ -86,6 +179,28 @@ export function SaraDrawer({ isOpen, onClose }) {
     };
   }, []);
 
+  // Switch Active Agent
+  const handleSelectAgent = (agent) => {
+    if (agent.id === activeAgentId) return;
+    setActiveAgentId(agent.id);
+    stopSpeaking();
+    
+    // Add welcome greeting from newly selected agent
+    const newMsg = {
+      id: "agent-switch-" + Date.now(),
+      agent_id: agent.id,
+      sender: "sara",
+      agent_name: agent.name,
+      text: agent.greeting,
+      suggested: agent.suggested
+    };
+    setMessages((prev) => [...prev, newMsg]);
+
+    if (voiceOutputEnabled) {
+      speakText(agent.greeting, newMsg.id);
+    }
+  };
+
   const toggleVoiceOutput = () => {
     setVoiceOutputEnabled((prev) => {
       const next = !prev;
@@ -96,7 +211,7 @@ export function SaraDrawer({ isOpen, onClose }) {
   };
 
   // -------------------------------------------------------------
-  // TEXT-TO-SPEECH (TTS) - Sara speaks out loud
+  // TEXT-TO-SPEECH (TTS) - Speaks out loud
   // -------------------------------------------------------------
   const cleanTextForSpeech = (text) => {
     if (!text) return "";
@@ -121,8 +236,6 @@ export function SaraDrawer({ isOpen, onClose }) {
     }
 
     const utterance = new SpeechSynthesisUtterance(clean);
-    
-    // Select best natural sounding voice
     const voices = window.speechSynthesis.getVoices();
     const preferredVoice = voices.find((v) => 
       v.lang.startsWith("en") && 
@@ -191,7 +304,6 @@ export function SaraDrawer({ isOpen, onClose }) {
       return;
     }
 
-    // Do not listen while Sara is talking or thinking
     if (isSpeakingRef.current || isLoadingRef.current) return;
 
     stopSpeaking();
@@ -226,8 +338,7 @@ export function SaraDrawer({ isOpen, onClose }) {
           setInputMsg(currentText);
           setLiveTranscript(currentText);
 
-          // REAL-TIME SILENCE DETECTION:
-          // In Live Call Mode, when user pauses for 1.3 seconds, automatically submit to Sara!
+          // In Live Call Mode, silence of 1.3s triggers auto-send
           if (isLiveModeRef.current) {
             if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
             silenceTimerRef.current = setTimeout(() => {
@@ -254,7 +365,6 @@ export function SaraDrawer({ isOpen, onClose }) {
 
       recognition.onend = () => {
         setIsListening(false);
-        // In continuous Live Call Mode, if ended without speech and not speaking/thinking, immediately resume listening
         if (isLiveModeRef.current && !isSpeakingRef.current && !isLoadingRef.current) {
           setTimeout(() => {
             if (isLiveModeRef.current && !isSpeakingRef.current && !isLoadingRef.current) {
@@ -278,43 +388,43 @@ export function SaraDrawer({ isOpen, onClose }) {
   const handleLiveSend = async (queryText) => {
     if (!queryText.trim() || isLoadingRef.current) return;
 
-    // 1. Temporarily pause microphone while Sara processes and responds
     stopListening();
     setLoading(true);
     isLoadingRef.current = true;
-    setVoiceStatus("Sara is thinking...");
+    setVoiceStatus(`${activeAgent.name} is thinking...`);
 
     const userMsgId = "user-" + Date.now();
     setMessages((prev) => [...prev, { id: userMsgId, sender: "user", text: queryText }]);
     setInputMsg("");
 
     try {
-      const res = await api.askSara(queryText);
-      const reply = res.reply || "I'm right here with you! Let's keep making progress.";
-      const saraMsgId = "sara-" + Date.now();
+      const res = await api.askSara(queryText, activeAgentId);
+      const reply = res.reply || "I am right here with you! Let's keep making progress.";
+      const respAgentName = res.agent_name || activeAgent.name;
+      const saraMsgId = "agent-" + Date.now();
 
       setLiveSaraReply(reply);
       setMessages((prev) => [
         ...prev,
         {
           id: saraMsgId,
+          agent_id: activeAgentId,
           sender: "sara",
+          agent_name: respAgentName,
           text: reply,
           suggested: res.suggested_actions || []
         }
       ]);
 
-      setVoiceStatus("Sara is speaking...");
+      setVoiceStatus(`${respAgentName} is speaking...`);
       setLoading(false);
       isLoadingRef.current = false;
 
-      // 2. Sara speaks her reply live out loud!
-      // When Sara finishes speaking, automatically resume listening to the user!
+      // Agent speaks reply out loud
       speakText(reply, saraMsgId, () => {
         if (isLiveModeRef.current) {
           setVoiceStatus("Listening to you... Speak now");
           setLiveTranscript("");
-          // Brief 350ms buffer then resume listening
           setTimeout(() => {
             if (isLiveModeRef.current && !isSpeakingRef.current) {
               startListening();
@@ -323,11 +433,11 @@ export function SaraDrawer({ isOpen, onClose }) {
         }
       });
     } catch (err) {
-      console.error("Sara live query error:", err);
+      console.error("Live agent query error:", err);
       const fallbackReply = "I had a momentary glitch connecting. Could you please repeat that?";
       setMessages((prev) => [
         ...prev,
-        { id: "err-" + Date.now(), sender: "sara", text: fallbackReply }
+        { id: "err-" + Date.now(), sender: "sara", agent_name: activeAgent.name, text: fallbackReply }
       ]);
       setLoading(false);
       isLoadingRef.current = false;
@@ -340,7 +450,7 @@ export function SaraDrawer({ isOpen, onClose }) {
     }
   };
 
-  // Start Real-Time Live Voice Call
+  // Start Real-Time Live Voice Call with Active Agent
   const startLiveCall = () => {
     setIsLiveCallActive(true);
     isLiveModeRef.current = true;
@@ -348,9 +458,8 @@ export function SaraDrawer({ isOpen, onClose }) {
     setLiveSaraReply("");
     stopSpeaking();
     
-    // Greet user and initiate real-time conversational loop
-    const introGreeting = "Hey! I'm listening. Ask me anything about your diet, workouts, or calories!";
-    setVoiceStatus("Sara greeting...");
+    const introGreeting = `Hey! ${activeAgent.name} here. I'm listening live. Speak your question!`;
+    setVoiceStatus(`${activeAgent.name} greeting...`);
     speakText(introGreeting, null, () => {
       if (isLiveModeRef.current) {
         setVoiceStatus("Listening... Speak now");
@@ -359,7 +468,6 @@ export function SaraDrawer({ isOpen, onClose }) {
     });
   };
 
-  // End Real-Time Live Voice Call
   const endLiveCall = () => {
     setIsLiveCallActive(false);
     isLiveModeRef.current = false;
@@ -370,7 +478,7 @@ export function SaraDrawer({ isOpen, onClose }) {
     setVoiceStatus("");
   };
 
-  // Regular Send Message (via text submit button)
+  // Standard Send Message
   const handleStandardSend = async (textToSend) => {
     const query = (textToSend || inputMsg).trim();
     if (!query || loading) return;
@@ -389,15 +497,18 @@ export function SaraDrawer({ isOpen, onClose }) {
     setLoading(true);
 
     try {
-      const res = await api.askSara(query);
-      const saraMsgId = "sara-" + Date.now();
-      const replyText = res.reply || "I'm right here with you on your fitness journey!";
+      const res = await api.askSara(query, activeAgentId);
+      const saraMsgId = "agent-" + Date.now();
+      const replyText = res.reply || "I am right here with you on your fitness journey!";
+      const respAgentName = res.agent_name || activeAgent.name;
       
       setMessages((prev) => [
         ...prev,
         {
           id: saraMsgId,
+          agent_id: activeAgentId,
           sender: "sara",
+          agent_name: respAgentName,
           text: replyText,
           suggested: res.suggested_actions || []
         }
@@ -410,7 +521,7 @@ export function SaraDrawer({ isOpen, onClose }) {
       const errText = "I'm having trouble connecting to my AI core right now. Please try again shortly!";
       setMessages((prev) => [
         ...prev,
-        { id: "err-" + Date.now(), sender: "sara", text: errText }
+        { id: "err-" + Date.now(), sender: "sara", agent_name: activeAgent.name, text: errText }
       ]);
       if (voiceOutputEnabled) {
         speakText(errText);
@@ -427,13 +538,15 @@ export function SaraDrawer({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+  const ActiveAvatarIcon = activeAgent.avatarIcon;
+
   return (
     <div style={{
       position: "fixed",
       top: 0,
       right: 0,
       bottom: 0,
-      width: "440px",
+      width: "450px",
       maxWidth: "100vw",
       background: "var(--bg-secondary)",
       borderLeft: "1px solid var(--border-color)",
@@ -443,11 +556,11 @@ export function SaraDrawer({ isOpen, onClose }) {
       flexDirection: "column",
       animation: "slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)"
     }}>
-      {/* 1. SARA HEADER */}
+      {/* 1. AGENT DRAWER HEADER */}
       <div style={{
         padding: "16px 20px",
         borderBottom: "1px solid var(--border-color)",
-        background: "linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.08) 100%)",
+        background: "linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(20, 24, 40, 0.95) 100%)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between"
@@ -457,39 +570,37 @@ export function SaraDrawer({ isOpen, onClose }) {
             width: "44px",
             height: "44px",
             borderRadius: "50%",
-            background: isLiveCallActive 
-              ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" 
-              : "var(--gradient-purple)",
+            background: activeAgent.gradient,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             color: "#fff",
             boxShadow: isSpeaking 
-              ? "0 0 24px rgba(139, 92, 246, 0.9)" 
+              ? `0 0 24px ${activeAgent.color}` 
               : isLiveCallActive 
-              ? "0 0 20px rgba(16, 185, 129, 0.6)" 
-              : "0 0 14px rgba(139, 92, 246, 0.4)",
+              ? `0 0 20px ${activeAgent.color}` 
+              : "0 0 14px rgba(0, 0, 0, 0.4)",
             position: "relative",
             transition: "all 0.3s ease"
           }}>
-            <Bot size={22} />
-            {isSpeaking && <span className="voice-pulse-ring" />}
+            <ActiveAvatarIcon size={22} />
+            {isSpeaking && <span className="voice-pulse-ring" style={{ borderColor: activeAgent.color }} />}
           </div>
           <div>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: "800", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "6px", margin: 0 }}>
-              Sara <Sparkles size={16} color="var(--brand-purple)" />
+            <h3 style={{ fontSize: "1.05rem", fontWeight: "800", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "6px", margin: 0 }}>
+              {activeAgent.name} <Sparkles size={15} color={activeAgent.color} />
             </h3>
-            <p style={{ fontSize: "0.75rem", color: isLiveCallActive ? "#34d399" : "var(--text-muted)", margin: "2px 0 0 0", display: "flex", alignItems: "center", gap: "5px", fontWeight: isLiveCallActive ? "700" : "400" }}>
-              <Radio size={12} color={isLiveCallActive ? "#34d399" : "#94a3b8"} className={isLiveCallActive ? "spin-pulse" : ""} />
+            <p style={{ fontSize: "0.74rem", color: isLiveCallActive ? activeAgent.color : "var(--text-muted)", margin: "2px 0 0 0", display: "flex", alignItems: "center", gap: "5px", fontWeight: isLiveCallActive ? "700" : "400" }}>
+              <Radio size={11} color={activeAgent.color} className={isLiveCallActive ? "spin-pulse" : ""} />
               {isLiveCallActive 
-                ? (isSpeaking ? "Sara speaking..." : isListening ? "Listening to you..." : "Live Call Active") 
-                : "FitQuest AI Voice Assistant"}
+                ? (isSpeaking ? `${activeAgent.name} speaking...` : isListening ? "Listening to you..." : "Live Call Active") 
+                : activeAgent.title}
             </p>
           </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {/* Live Call Toggle Button (Green when active) */}
+          {/* Live Call Toggle Button */}
           <button
             onClick={isLiveCallActive ? endLiveCall : startLiveCall}
             style={{
@@ -506,7 +617,7 @@ export function SaraDrawer({ isOpen, onClose }) {
               fontWeight: "800",
               transition: "all 0.15s ease"
             }}
-            title={isLiveCallActive ? "End Real-time Voice Call" : "Start Live Voice Call with Sara"}
+            title={isLiveCallActive ? "End Real-time Voice Call" : `Start Live Voice Call with ${activeAgent.name}`}
           >
             {isLiveCallActive ? <PhoneOff size={14} /> : <Phone size={14} />}
             <span>{isLiveCallActive ? "End Call" : "Live Call"}</span>
@@ -554,7 +665,55 @@ export function SaraDrawer({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* 2. REAL-TIME LIVE VOICE CALL OVERLAY / SCREEN */}
+      {/* 2. SPECIALIZED AI AGENTS SWITCHER PILLS (SARA, CHEF MACRO, MARCUS, ZEN, BLAZE) */}
+      {!isLiveCallActive && (
+        <div style={{
+          padding: "10px 16px",
+          background: "rgba(10, 13, 24, 0.8)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+          display: "flex",
+          gap: "8px",
+          overflowX: "auto",
+          whiteSpace: "nowrap"
+        }}>
+          {AI_AGENTS.map((agent) => {
+            const isSelected = agent.id === activeAgentId;
+            const Icon = agent.avatarIcon;
+
+            return (
+              <button
+                key={agent.id}
+                onClick={() => handleSelectAgent(agent)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "100px",
+                  border: isSelected ? `1px solid ${agent.color}` : "1px solid rgba(255, 255, 255, 0.08)",
+                  background: isSelected ? `rgba(${agent.id === 'nutrition' ? '16, 185, 129' : agent.id === 'workout' ? '244, 63, 94' : agent.id === 'recovery' ? '6, 182, 212' : agent.id === 'accountability' ? '245, 158, 11' : '139, 92, 246'}, 0.2)` : "rgba(255, 255, 255, 0.04)",
+                  color: isSelected ? "#ffffff" : "#94a3b8",
+                  fontSize: "0.75rem",
+                  fontWeight: isSelected ? "800" : "600",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  flexShrink: 0
+                }}
+              >
+                <Icon size={13} color={isSelected ? agent.color : "#94a3b8"} />
+                <span>{agent.name}</span>
+                {isSelected && (
+                  <span style={{ fontSize: "0.65rem", padding: "1px 6px", borderRadius: "10px", background: agent.color, color: "#fff" }}>
+                    Active
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 3. REAL-TIME LIVE VOICE CALL OVERLAY / SCREEN */}
       {isLiveCallActive ? (
         <div style={{
           flex: 1,
@@ -563,7 +722,7 @@ export function SaraDrawer({ isOpen, onClose }) {
           alignItems: "center",
           justifyContent: "center",
           padding: "24px 20px",
-          background: "radial-gradient(circle at 50% 40%, rgba(139, 92, 246, 0.18) 0%, rgba(13, 16, 28, 0.98) 100%)",
+          background: `radial-gradient(circle at 50% 40%, rgba(${activeAgent.id === 'nutrition' ? '16, 185, 129' : activeAgent.id === 'workout' ? '244, 63, 94' : activeAgent.id === 'recovery' ? '6, 182, 212' : activeAgent.id === 'accountability' ? '245, 158, 11' : '139, 92, 246'}, 0.22) 0%, rgba(13, 16, 28, 0.98) 100%)`,
           textAlign: "center",
           position: "relative",
           overflow: "hidden"
@@ -575,22 +734,22 @@ export function SaraDrawer({ isOpen, onClose }) {
             gap: "8px",
             padding: "6px 14px",
             borderRadius: "100px",
-            background: isSpeaking ? "rgba(139, 92, 246, 0.25)" : "rgba(16, 185, 129, 0.2)",
-            border: isSpeaking ? "1px solid rgba(139, 92, 246, 0.45)" : "1px solid rgba(16, 185, 129, 0.4)",
-            color: isSpeaking ? "#c4b5fd" : "#34d399",
+            background: isSpeaking ? `rgba(255, 255, 255, 0.15)` : "rgba(16, 185, 129, 0.2)",
+            border: `1px solid ${activeAgent.color}`,
+            color: "#ffffff",
             fontSize: "0.82rem",
             fontWeight: "800",
             marginBottom: "28px"
           }}>
-            <span className={isSpeaking ? "pulse-dot-purple" : "pulse-dot-green"} />
+            <span className="pulse-dot-green" />
             {isSpeaking 
-              ? "Sara Speaking Out Loud..." 
+              ? `${activeAgent.name} Speaking...` 
               : loading 
-              ? "Sara Thinking..." 
-              : "Live: Listening to You..."}
+              ? `${activeAgent.name} Thinking...` 
+              : `Live: Listening to You...`}
           </div>
 
-          {/* Glowing Animated AI Voice Orb (ChatGPT / Gemini Live Style) */}
+          {/* Glowing Animated AI Voice Orb Styled Per Active Agent */}
           <div 
             onClick={() => {
               if (isSpeaking) stopSpeaking();
@@ -600,26 +759,25 @@ export function SaraDrawer({ isOpen, onClose }) {
               width: "150px",
               height: "150px",
               borderRadius: "50%",
-              margin: "10px auto 30px auto",
+              margin: "10px auto 26px auto",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               cursor: isSpeaking ? "pointer" : "default",
               position: "relative",
-              boxShadow: isSpeaking 
-                ? "0 0 50px rgba(139, 92, 246, 0.7), inset 0 0 25px rgba(236, 72, 153, 0.6)" 
-                : "0 0 40px rgba(16, 185, 129, 0.6), inset 0 0 20px rgba(6, 182, 212, 0.5)"
+              background: activeAgent.gradient,
+              boxShadow: `0 0 55px ${activeAgent.orbGlow}, inset 0 0 25px rgba(255, 255, 255, 0.5)`
             }}
-            title={isSpeaking ? "Tap to interrupt Sara" : "Live Voice Assistant"}
+            title={isSpeaking ? `Tap to interrupt ${activeAgent.name}` : `Live with ${activeAgent.name}`}
           >
             <div className="orb-inner-wave" />
-            <Bot size={48} color="#ffffff" style={{ zIndex: 2 }} />
+            <ActiveAvatarIcon size={48} color="#ffffff" style={{ zIndex: 2 }} />
           </div>
 
           {/* Equalizer Waveform Animation */}
           {isSpeaking && (
             <div className="equalizer-bars-live" style={{ marginBottom: "16px" }}>
-              <span /><span /><span /><span /><span /><span /><span />
+              <span style={{ background: activeAgent.color }} /><span style={{ background: activeAgent.color }} /><span style={{ background: activeAgent.color }} /><span style={{ background: activeAgent.color }} /><span style={{ background: activeAgent.color }} /><span style={{ background: activeAgent.color }} /><span style={{ background: activeAgent.color }} />
             </div>
           )}
 
@@ -627,7 +785,7 @@ export function SaraDrawer({ isOpen, onClose }) {
           <div style={{
             maxWidth: "340px",
             width: "100%",
-            minHeight: "80px",
+            minHeight: "75px",
             display: "flex",
             flexDirection: "column",
             gap: "8px",
@@ -655,13 +813,13 @@ export function SaraDrawer({ isOpen, onClose }) {
                 lineHeight: "1.4",
                 margin: 0
               }}>
-                Sara: {liveSaraReply.slice(0, 110)}...
+                {activeAgent.name}: {liveSaraReply.slice(0, 110)}...
               </p>
             )}
 
             {!liveTranscript && !isSpeaking && (
               <p style={{ fontSize: "0.85rem", color: "#64748b", margin: 0 }}>
-                Speak naturally. Sara will listen and reply live out loud.
+                Speak naturally. {activeAgent.name} will listen and reply live out loud.
               </p>
             )}
           </div>
@@ -685,7 +843,7 @@ export function SaraDrawer({ isOpen, onClose }) {
                   gap: "6px"
                 }}
               >
-                <Square size={13} fill="#cbd5e1" /> Interrupt / Pause
+                <Square size={13} fill="#cbd5e1" /> Interrupt
               </button>
             )}
 
@@ -711,7 +869,7 @@ export function SaraDrawer({ isOpen, onClose }) {
           </div>
         </div>
       ) : (
-        /* 3. STANDARD CHAT VIEW WITH ACCESSIBLE VOICE INPUT */
+        /* 4. STANDARD CHAT VIEW WITH ACCESSIBLE VOICE INPUT & AGENT PERSONALITIES */
         <>
           {/* Active Speaking Status Bar */}
           {isSpeaking && (
@@ -728,7 +886,7 @@ export function SaraDrawer({ isOpen, onClose }) {
                   <span /><span /><span /><span />
                 </div>
                 <span style={{ fontSize: "0.8rem", color: "#c4b5fd", fontWeight: "700" }}>
-                  Sara is speaking...
+                  {activeAgent.name} is speaking...
                 </span>
               </div>
               <button
@@ -798,6 +956,8 @@ export function SaraDrawer({ isOpen, onClose }) {
             {messages.map((m) => {
               const isUser = m.sender === "user";
               const isThisMsgSpeaking = currentlySpeakingId === m.id && isSpeaking;
+              const msgAgent = AI_AGENTS.find((a) => a.id === m.agent_id) || activeAgent;
+              const MsgAgentIcon = msgAgent.avatarIcon;
 
               return (
                 <div
@@ -819,7 +979,7 @@ export function SaraDrawer({ isOpen, onClose }) {
                       width: "32px",
                       height: "32px",
                       borderRadius: "50%",
-                      background: isUser ? "var(--gradient-primary)" : "var(--gradient-purple)",
+                      background: isUser ? "var(--gradient-primary)" : msgAgent.gradient,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -828,7 +988,7 @@ export function SaraDrawer({ isOpen, onClose }) {
                       fontWeight: "700",
                       flexShrink: 0
                     }}>
-                      {isUser ? <User size={16} /> : <Bot size={16} />}
+                      {isUser ? <User size={16} /> : <MsgAgentIcon size={16} />}
                     </div>
 
                     <div style={{
@@ -843,9 +1003,15 @@ export function SaraDrawer({ isOpen, onClose }) {
                       border: isUser ? "none" : "1px solid var(--border-color)",
                       position: "relative"
                     }}>
+                      {!isUser && m.agent_name && (
+                        <div style={{ fontSize: "0.72rem", fontWeight: "800", color: msgAgent.color, marginBottom: "4px" }}>
+                          {m.agent_name}
+                        </div>
+                      )}
+                      
                       {m.text}
 
-                      {/* Speaker Button on Sara's message to read aloud on demand */}
+                      {/* Speaker Button on Agent's message to read aloud */}
                       {!isUser && (
                         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px" }}>
                           <button
@@ -896,9 +1062,9 @@ export function SaraDrawer({ isOpen, onClose }) {
                           key={sIdx}
                           onClick={() => handleStandardSend(sug)}
                           style={{
-                            background: "rgba(139, 92, 246, 0.12)",
-                            border: "1px solid rgba(139, 92, 246, 0.3)",
-                            color: "var(--brand-purple)",
+                            background: "rgba(255, 255, 255, 0.05)",
+                            border: `1px solid rgba(255, 255, 255, 0.12)`,
+                            color: activeAgent.color,
                             padding: "6px 12px",
                             borderRadius: "var(--radius-full)",
                             fontSize: "0.75rem",
@@ -917,15 +1083,15 @@ export function SaraDrawer({ isOpen, onClose }) {
             })}
 
             {loading && (
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--brand-purple)", fontSize: "0.85rem", paddingLeft: "42px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", color: activeAgent.color, fontSize: "0.85rem", paddingLeft: "42px" }}>
                 <Loader2 size={18} className="spin" style={{ animation: "spin 1s linear infinite" }} />
-                <span>Sara is analyzing & preparing your guidance...</span>
+                <span>{activeAgent.name} is preparing guidance...</span>
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
 
-          {/* 4. INPUT BAR WITH INTEGRATED VOICE MICROPHONE */}
+          {/* 5. INPUT BAR WITH INTEGRATED VOICE MICROPHONE */}
           <div style={{
             padding: "16px",
             borderTop: "1px solid var(--border-color)",
@@ -942,11 +1108,11 @@ export function SaraDrawer({ isOpen, onClose }) {
                 width: "44px",
                 height: "44px",
                 borderRadius: "12px",
-                border: isListening ? "1px solid #ef4444" : "1px solid rgba(139, 92, 246, 0.4)",
+                border: isListening ? "1px solid #ef4444" : `1px solid ${activeAgent.color}`,
                 background: isListening 
                   ? "radial-gradient(circle, #ef4444 0%, #b91c1c 100%)" 
-                  : "rgba(139, 92, 246, 0.18)",
-                color: isListening ? "#ffffff" : "#a78bfa",
+                  : "rgba(255, 255, 255, 0.08)",
+                color: isListening ? "#ffffff" : activeAgent.color,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -955,7 +1121,7 @@ export function SaraDrawer({ isOpen, onClose }) {
                 transition: "all 0.2s ease",
                 position: "relative"
               }}
-              title={isListening ? "Stop listening" : "Tap to speak (Voice Input)"}
+              title={isListening ? "Stop listening" : `Tap to speak with ${activeAgent.name}`}
             >
               {isListening ? <MicOff size={20} /> : <Mic size={20} />}
               {isListening && <span className="mic-listening-pulse" />}
@@ -963,7 +1129,7 @@ export function SaraDrawer({ isOpen, onClose }) {
 
             <input
               type="text"
-              placeholder={isListening ? "Listening... Speak now" : "Ask Sara or tap mic to speak..."}
+              placeholder={isListening ? "Listening... Speak now" : `Ask ${activeAgent.name} or tap mic...`}
               value={inputMsg}
               onChange={(e) => setInputMsg(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleStandardSend()}
@@ -979,7 +1145,7 @@ export function SaraDrawer({ isOpen, onClose }) {
               onClick={() => handleStandardSend()}
               disabled={loading || !inputMsg.trim()}
               style={{
-                background: "var(--gradient-purple)",
+                background: activeAgent.gradient,
                 color: "#fff",
                 border: "none",
                 borderRadius: "var(--radius-md)",
@@ -1053,31 +1219,20 @@ export function SaraDrawer({ isOpen, onClose }) {
           animation: pulseRing 1.5s infinite;
         }
 
-        .pulse-dot-purple {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #8b5cf6;
-          display: inline-block;
-          animation: pulseRing 1.2s infinite;
-        }
-
         .live-ai-orb {
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .orb-speaking {
-          background: radial-gradient(circle, #8b5cf6 0%, #ec4899 50%, #4f46e5 100%);
           animation: orbGlow 1.8s infinite ease-in-out;
         }
 
         .orb-listening {
-          background: radial-gradient(circle, #10b981 0%, #06b6d4 50%, #047857 100%);
           animation: orbGlow 2.2s infinite ease-in-out;
         }
 
         .orb-idle {
-          background: radial-gradient(circle, #6366f1 0%, #8b5cf6 100%);
+          filter: brightness(1);
         }
 
         .orb-inner-wave {
@@ -1116,7 +1271,6 @@ export function SaraDrawer({ isOpen, onClose }) {
 
         .equalizer-bars-live span {
           width: 4px;
-          background: #a78bfa;
           border-radius: 4px;
           animation: eqAnimLive 0.6s ease-in-out infinite alternate;
         }

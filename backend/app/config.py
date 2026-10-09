@@ -12,8 +12,10 @@ class Settings:
     PORT: int = int(os.getenv("PORT", 8000))
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
     
-    # Gemini AI
+    # AI Providers (Gemini & Meta Llama 3 via Groq)
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
+    GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY")
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "auto")
     
     # Firebase
     FIREBASE_PROJECT_ID: Optional[str] = os.getenv("FIREBASE_PROJECT_ID")
