@@ -442,7 +442,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
                 Complete Profile Setup (Height, Weight & Fitness Goals)
               </p>
               <p style={{ margin: "3px 0 0 0", color: "#94a3b8", fontSize: "0.78rem" }}>
-                உங்களின் உயரம், எடை கொடுத்து AI Targets & BMI கணக்கிடுங்கள் ➜
+                Enter your height and weight to calculate AI targets & BMI ➜
               </p>
             </div>
           </div>
@@ -556,7 +556,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
             </div>
             <div>
               <span style={{ fontSize: "0.74rem", fontWeight: "800", color: "#ff334b", letterSpacing: "1.8px", textTransform: "uppercase" }}>
-                DAILY CALORIE BURN TARGET (எரிக்க வேண்டிய கலோரிகள்)
+                DAILY CALORIE BURN TARGET
               </span>
               <h3 style={{ fontSize: "1.55rem", fontWeight: "900", color: "#ffffff", marginTop: "2px" }}>
                 {dailyBurnTarget ? (
@@ -1162,7 +1162,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
                   Build Your Fitness Profile
                 </h2>
                 <p style={{ fontSize: "0.82rem", color: "#94a3b8", margin: "4px 0 0 0" }}>
-                  உங்களின் உடல் அளவீடுகளை உள்ளிட்டு AI Targets கணக்கிடுங்கள்
+                  Enter your body metrics to calculate AI targets & BMI
                 </p>
               </div>
 
@@ -1191,7 +1191,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
               <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={{ fontSize: "0.78rem", fontWeight: "800", color: "#cbd5e1", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <User size={14} color="#8c9eff" /> Full Name (பெயர்)
+                    <User size={14} color="#8c9eff" /> Full Name
                   </label>
                   <input
                     type="text"
@@ -1203,7 +1203,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
                 </div>
                 <div>
                   <label style={{ fontSize: "0.78rem", fontWeight: "800", color: "#cbd5e1" }}>
-                    Age (வயது)
+                    Age
                   </label>
                   <input
                     type="number"
@@ -1220,7 +1220,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
               {/* Row 2: Gender Selection */}
               <div>
                 <label style={{ fontSize: "0.78rem", fontWeight: "800", color: "#cbd5e1", marginBottom: "6px", display: "block" }}>
-                  Gender (பாலினம்)
+                  Gender
                 </label>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
                   {["Male", "Female", "Other"].map((gen) => (
@@ -1249,7 +1249,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
               {/* Row 3: Height, Current Weight, Target Weight */}
               <div style={{ background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.08)", padding: "14px", borderRadius: "16px" }}>
                 <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#8c9eff", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: "10px" }}>
-                  Body Measurements (உடல் அளவீடுகள்)
+                  Body Measurements
                 </span>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
                   <div>
@@ -1321,17 +1321,17 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
               {/* Row 4: Primary Fitness Goal */}
               <div>
                 <label style={{ fontSize: "0.78rem", fontWeight: "800", color: "#cbd5e1", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                  <Dumbbell size={14} color="#ff334b" /> Primary Goal (முக்கிய உடற்பயிற்சி இலக்கு)
+                  <Dumbbell size={14} color="#ff334b" /> Primary Goal
                 </label>
                 <select
                   value={initialProfileForm.goal}
                   onChange={(e) => setInitialProfileForm({ ...initialProfileForm, goal: e.target.value })}
                   style={{ width: "100%", padding: "11px 14px", background: "#171c30", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px", color: "#fff", fontWeight: "700", fontSize: "0.85rem" }}
                 >
-                  <option value="Weight loss">Weight Loss & Fat Burn (எடை குறைப்பு)</option>
-                  <option value="Muscle building">Muscle Building & Hypertrophy (தசை வளர்ச்சி)</option>
-                  <option value="General fitness">General Fitness & Athleticism (ஆரோக்கியம்)</option>
-                  <option value="Endurance">Cardio Endurance & Stamina (தாங்குதிறன்)</option>
+                  <option value="Weight loss">Weight Loss & Fat Burn</option>
+                  <option value="Muscle building">Muscle Building & Hypertrophy</option>
+                  <option value="General fitness">General Fitness & Athleticism</option>
+                  <option value="Endurance">Cardio Endurance & Stamina</option>
                 </select>
               </div>
 
@@ -1361,10 +1361,10 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
                     onChange={(e) => setInitialProfileForm({ ...initialProfileForm, dietary_preference: e.target.value })}
                     style={{ width: "100%", padding: "11px 12px", background: "#171c30", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px", color: "#fff", fontWeight: "600", fontSize: "0.82rem" }}
                   >
-                    <option value="Non-Vegetarian">Non-Vegetarian (அசைவம்)</option>
-                    <option value="Vegetarian">Vegetarian (சைவம்)</option>
-                    <option value="Eggetarian">Eggetarian (முட்டை மட்டும்)</option>
-                    <option value="Vegan">Vegan (முழு தாவர உணவு)</option>
+                    <option value="Non-Vegetarian">Non-Vegetarian</option>
+                    <option value="Vegetarian">Vegetarian</option>
+                    <option value="Eggetarian">Eggetarian</option>
+                    <option value="Vegan">Vegan</option>
                   </select>
                 </div>
               </div>
