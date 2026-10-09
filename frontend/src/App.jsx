@@ -21,7 +21,7 @@ import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 
 import { api } from "./api";
-import { Sparkles, Loader2, Smartphone, Monitor } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { getResolvedUserName } from "./utils/userHelper";
 
 class ErrorBoundary extends React.Component {
@@ -83,8 +83,17 @@ export default function App() {
   const [isSaraOpen, setIsSaraOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   
-  // Default view mode on desktop: "mobile" (Phone frame) or "desktop" (Wide)
-  const [viewMode, setViewMode] = useState("mobile");
+  const [isMobileLayout, setIsMobileLayout] = useState(
+    typeof window !== "undefined" ? window.innerWidth <= 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileLayout(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Apply theme to HTML root element
   useEffect(() => {
@@ -180,34 +189,11 @@ export default function App() {
     return <Onboarding onComplete={(newProf) => setProfile(newProf)} />;
   }
 
-  // 4. MAIN APP - TRUE MOBILE-FIRST EXPERIENCE
-  const isMobileLayout = viewMode === "mobile";
-
+  // 4. MAIN APP - RESPONSIVE EXPERIENCE (NO MANUAL SWITCHER BUTTONS)
   return (
     <ErrorBoundary>
       <div className={`app-root-wrapper ${isMobileLayout ? "mode-phone" : "mode-desktop"}`}>
-        
-        {/* Desktop View Switcher Pill (Floating at top-right on wide screens) */}
-        <div className="view-mode-switcher-bar">
-          <div className="view-switcher-pill">
-            <button
-              onClick={() => setViewMode("mobile")}
-              className={`switcher-btn ${isMobileLayout ? "active" : ""}`}
-              title="Switch to Mobile App View"
-            >
-              <Smartphone size={14} /> Mobile App
-            </button>
-            <button
-              onClick={() => setViewMode("desktop")}
-              className={`switcher-btn ${!isMobileLayout ? "active" : ""}`}
-              title="Switch to Expanded Desktop View"
-            >
-              <Monitor size={14} /> Desktop
-            </button>
-          </div>
-        </div>
-
-        {/* IF EXPANDED DESKTOP MODE SELECTED */}
+        {/* IF EXPANDED DESKTOP MODE */}
         {!isMobileLayout ? (
           <div style={{ display: "flex", minHeight: "100vh", width: "100%", background: "var(--bg-primary)" }}>
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />

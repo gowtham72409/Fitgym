@@ -33,8 +33,25 @@ def extract_json(text: str) -> Optional[Dict[str, Any]]:
 # =====================================================================
 def calculate_fitness_metrics(profile: Dict[str, Any]) -> Dict[str, Any]:
     """Calculate BMI, BMR, TDEE, Calorie Target, and Protein Target safely."""
-    weight = float(profile.get("weight_kg", 70))
-    height = float(profile.get("height_cm", 170))
+    raw_weight = profile.get("weight_kg") or profile.get("current_weight_kg")
+    raw_height = profile.get("height_cm")
+    
+    # If new user has not set measurements yet, do not invent dummy values
+    if not raw_weight or not raw_height:
+        return {
+            "bmi": None,
+            "bmi_category": "Not Set",
+            "bmr": None,
+            "tdee": None,
+            "daily_calorie_target": profile.get("daily_calorie_target"),
+            "daily_burn_target_kcal": profile.get("daily_burn_target_kcal"),
+            "protein_target_g": profile.get("daily_protein_target"),
+            "carbs_target_g": profile.get("daily_carbs_target"),
+            "fat_target_g": profile.get("daily_fat_target")
+        }
+
+    weight = float(raw_weight)
+    height = float(raw_height)
     age = int(profile.get("age", 25))
     gender = profile.get("gender", "male").lower()
     activity = profile.get("activity_level", "moderate").lower()

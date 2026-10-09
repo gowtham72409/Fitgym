@@ -70,32 +70,32 @@ async def register_account(req: RegisterRequest):
         "email": clean_email,
         "password_hash": hashed,
         "photo_url": "",
-        "xp": 125,
-        "level": 2,
+        "xp": 0,
+        "level": 1,
         "streak": 1,
         "created_at": time.time()
     }
     save_document("users", user_id, user_record)
 
-    # Initial profile setup
+    # Initial profile setup (Clean empty profile for new users)
     profile = {
         "user_id": user_id,
         "name": clean_name,
         "email": clean_email,
-        "age": 26,
-        "gender": "male",
-        "weight_kg": 78.5,
-        "height_cm": 175,
-        "target_weight_kg": 72.0,
-        "goal": "Weight Loss & Muscle Tone",
-        "activity_level": "moderate",
-        "dietary_preference": "Non-Vegetarian",
         "streak": 1,
-        "level": 2,
-        "xp": 125,
-        "bmi": 25.6,
-        "daily_burn_target_kcal": 550,
-        "daily_calorie_target": 2150,
+        "level": 1,
+        "xp": 0,
+        "height_cm": None,
+        "weight_kg": None,
+        "current_weight_kg": None,
+        "target_weight_kg": None,
+        "bmi": None,
+        "daily_burn_target_kcal": None,
+        "daily_calorie_target": None,
+        "daily_protein_target": None,
+        "daily_carbs_target": None,
+        "daily_fat_target": None,
+        "daily_fiber_target": None,
         "onboarding_completed": True
     }
     save_document("fitness_profiles", user_id, profile)
@@ -151,8 +151,8 @@ async def login_with_password(req: LoginPasswordRequest):
             "name": user_name,
             "email": clean_email,
             "photo_url": "",
-            "xp": 125,
-            "level": 2,
+            "xp": 0,
+            "level": 1,
             "streak": 1
         }
         save_document("users", user_id, user_record)
@@ -163,23 +163,40 @@ async def login_with_password(req: LoginPasswordRequest):
             "user_id": user_id,
             "name": user_record.get("name", "Gowtham"),
             "email": clean_email,
-            "age": 26,
-            "gender": "male",
-            "weight_kg": 78.5,
-            "height_cm": 175,
-            "target_weight_kg": 72.0,
-            "goal": "Weight Loss & Muscle Tone",
-            "activity_level": "moderate",
-            "dietary_preference": "Non-Vegetarian",
             "streak": 1,
-            "level": 2,
-            "xp": 125,
-            "bmi": 25.6,
-            "daily_burn_target_kcal": 550,
-            "daily_calorie_target": 2150,
+            "level": 1,
+            "xp": 0,
+            "height_cm": None,
+            "weight_kg": None,
+            "current_weight_kg": None,
+            "target_weight_kg": None,
+            "bmi": None,
+            "daily_burn_target_kcal": None,
+            "daily_calorie_target": None,
+            "daily_protein_target": None,
+            "daily_carbs_target": None,
+            "daily_fat_target": None,
+            "daily_fiber_target": None,
             "onboarding_completed": True
         }
         save_document("fitness_profiles", user_id, profile)
+    else:
+        # If user has the old dummy numbers (78.5 and 175) or level 2, clean them up for new user experience
+        if profile.get("weight_kg") == 78.5 and profile.get("height_cm") == 175:
+            profile["height_cm"] = None
+            profile["weight_kg"] = None
+            profile["current_weight_kg"] = None
+            profile["target_weight_kg"] = None
+            profile["bmi"] = None
+            profile["daily_burn_target_kcal"] = None
+            profile["daily_calorie_target"] = None
+            profile["daily_protein_target"] = None
+            profile["daily_carbs_target"] = None
+            profile["daily_fat_target"] = None
+            profile["daily_fiber_target"] = None
+            profile["level"] = 1
+            profile["xp"] = 0
+            save_document("fitness_profiles", user_id, profile)
 
     token = f"dev-token-{user_id}"
 

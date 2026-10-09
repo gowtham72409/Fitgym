@@ -124,14 +124,14 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
   const [showCustomizeGoalsModal, setShowCustomizeGoalsModal] = useState(false);
   const [savingGoals, setSavingGoals] = useState(false);
   const [goalForm, setGoalForm] = useState({
-    daily_burn_target_kcal: profile?.daily_burn_target_kcal || 550,
-    daily_calorie_target: profile?.daily_calorie_target || 2200,
-    daily_protein_target: profile?.daily_protein_target || 140,
-    daily_carbs_target: profile?.daily_carbs_target || 250,
-    daily_fat_target: profile?.daily_fat_target || 60,
-    current_weight_kg: profile?.current_weight_kg || profile?.weight_kg || 80.0,
-    target_weight_kg: profile?.target_weight_kg || 65.0,
-    height_cm: profile?.height_cm || 175,
+    daily_burn_target_kcal: profile?.daily_burn_target_kcal || "",
+    daily_calorie_target: profile?.daily_calorie_target || "",
+    daily_protein_target: profile?.daily_protein_target || "",
+    daily_carbs_target: profile?.daily_carbs_target || "",
+    daily_fat_target: profile?.daily_fat_target || "",
+    current_weight_kg: profile?.current_weight_kg || profile?.weight_kg || "",
+    target_weight_kg: profile?.target_weight_kg || "",
+    height_cm: profile?.height_cm || "",
     water_target_ml: profile?.water_target_ml || 3000,
     step_target: profile?.step_target || 8000
   });
@@ -139,14 +139,14 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
   useEffect(() => {
     if (profile) {
       setGoalForm({
-        daily_burn_target_kcal: profile.daily_burn_target_kcal || 550,
-        daily_calorie_target: profile.daily_calorie_target || 2200,
-        daily_protein_target: profile.daily_protein_target || 140,
-        daily_carbs_target: profile.daily_carbs_target || 250,
-        daily_fat_target: profile.daily_fat_target || 60,
-        current_weight_kg: profile.current_weight_kg || profile.weight_kg || 80.0,
-        target_weight_kg: profile.target_weight_kg || 65.0,
-        height_cm: profile.height_cm || 175,
+        daily_burn_target_kcal: profile.daily_burn_target_kcal || "",
+        daily_calorie_target: profile.daily_calorie_target || "",
+        daily_protein_target: profile.daily_protein_target || "",
+        daily_carbs_target: profile.daily_carbs_target || "",
+        daily_fat_target: profile.daily_fat_target || "",
+        current_weight_kg: profile.current_weight_kg || profile.weight_kg || "",
+        target_weight_kg: profile.target_weight_kg || "",
+        height_cm: profile.height_cm || "",
         water_target_ml: profile.water_target_ml || 3000,
         step_target: profile.step_target || 8000
       });
@@ -217,22 +217,22 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
   const safeChallenges = Array.isArray(challenges) ? challenges : [];
 
   const name = profile?.name || "gowtham";
-  const heightCm = profile?.height_cm || 175;
-  const currentW = profile?.current_weight_kg || profile?.weight_kg || 80.0;
-  const targetW = profile?.target_weight_kg || 65.0;
-  const remainingW = profile?.target_weight_diff !== undefined ? profile.target_weight_diff : Math.max(0, +(currentW - targetW).toFixed(1));
-  const bmiVal = profile?.bmi || 28.0;
-  const bmiCat = profile?.bmi_category || "Overweight";
+  const heightCm = profile?.height_cm || null;
+  const currentW = (profile?.current_weight_kg || profile?.weight_kg) ? Number(profile?.current_weight_kg || profile?.weight_kg) : null;
+  const targetW = profile?.target_weight_kg ? Number(profile.target_weight_kg) : null;
+  const remainingW = (currentW && targetW) ? Math.abs(+(currentW - targetW).toFixed(1)) : null;
+  const bmiVal = (heightCm && currentW) ? +(currentW / ((heightCm / 100) ** 2)).toFixed(1) : (profile?.bmi || null);
+  const bmiCat = bmiVal ? (bmiVal < 18.5 ? "Underweight" : bmiVal < 25 ? "Normal" : bmiVal < 30 ? "Overweight" : "Obese") : null;
   const level = profile?.level || 1;
   const xp = profile?.xp !== undefined ? profile.xp : 0;
   const nextLevelXp = 500;
   const xpPercent = Math.min(100, Math.round(((xp % 500) / 500) * 100));
 
-  const dailyCal = profile?.daily_calorie_target || 2200;
-  const dailyProt = profile?.daily_protein_target || 140;
-  const dailyCarbs = profile?.daily_carbs_target || 250;
-  const dailyFat = profile?.daily_fat_target || 60;
-  const dailyFiber = profile?.daily_fiber_target || 30;
+  const dailyCal = profile?.daily_calorie_target || null;
+  const dailyProt = profile?.daily_protein_target || null;
+  const dailyCarbs = profile?.daily_carbs_target || null;
+  const dailyFat = profile?.daily_fat_target || null;
+  const dailyFiber = profile?.daily_fiber_target || null;
 
   // Calculate daily active burn calories needed
   const todayStr = new Date().toISOString().split("T")[0];
@@ -240,10 +240,8 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
     .filter((a) => a.created_at && a.created_at.startsWith(todayStr))
     .reduce((sum, a) => sum + (a.calories || 0), 0);
 
-  const dailyBurnTarget = profile?.daily_burn_target_kcal || (
-    currentW > targetW ? 550 : 400
-  );
-  const burnProgressPct = Math.min(100, Math.round((burnedToday / dailyBurnTarget) * 100));
+  const dailyBurnTarget = profile?.daily_burn_target_kcal || null;
+  const burnProgressPct = dailyBurnTarget ? Math.min(100, Math.round((burnedToday / dailyBurnTarget) * 100)) : 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingBottom: "40px" }}>
@@ -356,7 +354,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
           </div>
           <div>
             <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: "700" }}>Height</span>
-            <p style={{ fontSize: "1.35rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{heightCm} cm</p>
+            <p style={{ fontSize: "1.35rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{heightCm ? `${heightCm} cm` : "--"}</p>
           </div>
         </div>
 
@@ -367,7 +365,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
           </div>
           <div>
             <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: "700" }}>Current Weight</span>
-            <p style={{ fontSize: "1.35rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{currentW.toFixed(1)} kg</p>
+            <p style={{ fontSize: "1.35rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{currentW ? `${currentW.toFixed(1)} kg` : "--"}</p>
           </div>
         </div>
 
@@ -378,7 +376,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
           </div>
           <div>
             <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: "700" }}>Target Weight</span>
-            <p style={{ fontSize: "1.35rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{targetW.toFixed(1)} kg</p>
+            <p style={{ fontSize: "1.35rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{targetW ? `${targetW.toFixed(1)} kg` : "--"}</p>
           </div>
         </div>
 
@@ -389,7 +387,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
           </div>
           <div>
             <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: "700" }}>Target Weight Diff</span>
-            <p style={{ fontSize: "1.35rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{remainingW.toFixed(1)} kg</p>
+            <p style={{ fontSize: "1.35rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{remainingW !== null ? `${remainingW.toFixed(1)} kg` : "--"}</p>
           </div>
         </div>
 
@@ -400,8 +398,8 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
           </div>
           <div>
             <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: "700" }}>BMI Score</span>
-            <p style={{ fontSize: "1.35rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{bmiVal}</p>
-            <span style={{ fontSize: "0.68rem", color: "var(--brand-amber)", fontWeight: "700" }}>{bmiCat}</span>
+            <p style={{ fontSize: "1.35rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{bmiVal || "--"}</p>
+            <span style={{ fontSize: "0.68rem", color: bmiCat ? "var(--brand-amber)" : "var(--text-muted)", fontWeight: "700" }}>{bmiCat || "--"}</span>
           </div>
         </div>
       </div>
@@ -441,7 +439,11 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
                 DAILY CALORIE BURN TARGET (எரிக்க வேண்டிய கலோரிகள்)
               </span>
               <h3 style={{ fontSize: "1.55rem", fontWeight: "900", color: "#ffffff", marginTop: "2px" }}>
-                {dailyBurnTarget} <span style={{ fontSize: "0.92rem", color: "#94a3b8", fontWeight: "600" }}>kcal to burn today</span>
+                {dailyBurnTarget ? (
+                  <>{dailyBurnTarget} <span style={{ fontSize: "0.92rem", color: "#94a3b8", fontWeight: "600" }}>kcal to burn today</span></>
+                ) : (
+                  <>-- <span style={{ fontSize: "0.92rem", color: "#94a3b8", fontWeight: "600" }}>Set your burn target</span></>
+                )}
               </h3>
             </div>
           </div>
@@ -498,7 +500,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
               Today's Active Burned: <strong style={{ color: "#ff334b" }}>{burnedToday} kcal</strong>
             </span>
             <span style={{ color: "#94a3b8" }}>
-              {burnProgressPct}% achieved ({Math.max(0, dailyBurnTarget - burnedToday)} kcal remaining)
+              {dailyBurnTarget ? `${burnProgressPct}% achieved (${Math.max(0, dailyBurnTarget - burnedToday)} kcal remaining)` : "--"}
             </span>
           </div>
           <div style={{ width: "100%", height: "10px", background: "rgba(255, 255, 255, 0.1)", borderRadius: "10px", overflow: "hidden" }}>
@@ -518,19 +520,19 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "10px" }}>
           <div style={{ background: "rgba(255, 255, 255, 0.04)", padding: "10px 14px", borderRadius: "10px", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
             <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Active Burn Goal</span>
-            <p style={{ fontSize: "1.05rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{dailyBurnTarget} kcal</p>
+            <p style={{ fontSize: "1.05rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{dailyBurnTarget ? `${dailyBurnTarget} kcal` : "--"}</p>
           </div>
           <div style={{ background: "rgba(255, 255, 255, 0.04)", padding: "10px 14px", borderRadius: "10px", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
             <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Resting BMR</span>
-            <p style={{ fontSize: "1.05rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>1,750 kcal</p>
+            <p style={{ fontSize: "1.05rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{currentW && heightCm ? `${Math.round(10 * currentW + 6.25 * heightCm - 5 * 25 + 5)} kcal` : "--"}</p>
           </div>
           <div style={{ background: "rgba(255, 255, 255, 0.04)", padding: "10px 14px", borderRadius: "10px", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
             <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Estimated TDEE</span>
-            <p style={{ fontSize: "1.05rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>2,300 kcal</p>
+            <p style={{ fontSize: "1.05rem", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>{currentW && heightCm ? `${Math.round((10 * currentW + 6.25 * heightCm - 5 * 25 + 5) * 1.35)} kcal` : "--"}</p>
           </div>
           <div style={{ background: "rgba(255, 255, 255, 0.04)", padding: "10px 14px", borderRadius: "10px", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
             <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Recommended Plan</span>
-            <p style={{ fontSize: "0.85rem", fontWeight: "800", color: "#34d399", marginTop: "2px" }}>Cardio + Strength</p>
+            <p style={{ fontSize: "0.85rem", fontWeight: "800", color: "#34d399", marginTop: "2px" }}>{profile?.goal || "--"}</p>
           </div>
         </div>
       </div>
@@ -576,7 +578,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
             <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--brand-orange)", fontSize: "0.75rem", fontWeight: "700" }}>
               <Flame size={16} /> Daily Calories
             </div>
-            <p style={{ fontSize: "1.45rem", fontWeight: "800", color: "#ffffff", marginTop: "4px" }}>{dailyCal} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>kcal</span></p>
+            <p style={{ fontSize: "1.45rem", fontWeight: "800", color: "#ffffff", marginTop: "4px" }}>{dailyCal !== null ? dailyCal : "--"} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>kcal</span></p>
           </div>
 
           {/* Daily Protein */}
@@ -584,7 +586,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
             <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--brand-green)", fontSize: "0.75rem", fontWeight: "700" }}>
               <Dumbbell size={16} /> Daily Protein
             </div>
-            <p style={{ fontSize: "1.45rem", fontWeight: "800", color: "#ffffff", marginTop: "4px" }}>{dailyProt} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>g</span></p>
+            <p style={{ fontSize: "1.45rem", fontWeight: "800", color: "#ffffff", marginTop: "4px" }}>{dailyProt !== null ? dailyProt : "--"} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>g</span></p>
           </div>
 
           {/* Daily Carbs */}
@@ -592,7 +594,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
             <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--brand-cyan)", fontSize: "0.75rem", fontWeight: "700" }}>
               <Utensils size={16} /> Daily Carbs
             </div>
-            <p style={{ fontSize: "1.45rem", fontWeight: "800", color: "#ffffff", marginTop: "4px" }}>{dailyCarbs} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>g</span></p>
+            <p style={{ fontSize: "1.45rem", fontWeight: "800", color: "#ffffff", marginTop: "4px" }}>{dailyCarbs !== null ? dailyCarbs : "--"} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>g</span></p>
           </div>
 
           {/* Daily Fat */}
@@ -600,7 +602,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
             <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--brand-rose)", fontSize: "0.75rem", fontWeight: "700" }}>
               <Heart size={16} /> Daily Fat
             </div>
-            <p style={{ fontSize: "1.45rem", fontWeight: "800", color: "#ffffff", marginTop: "4px" }}>{dailyFat} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>g</span></p>
+            <p style={{ fontSize: "1.45rem", fontWeight: "800", color: "#ffffff", marginTop: "4px" }}>{dailyFat !== null ? dailyFat : "--"} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>g</span></p>
           </div>
 
           {/* Daily Fiber */}
@@ -608,7 +610,7 @@ export function HomeDashboard({ profile, onUpdateProfile, onNavigate, onOpenSara
             <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--brand-purple)", fontSize: "0.75rem", fontWeight: "700" }}>
               <Sparkles size={16} /> Daily Fiber
             </div>
-            <p style={{ fontSize: "1.45rem", fontWeight: "800", color: "#ffffff", marginTop: "4px" }}>{dailyFiber} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>g</span></p>
+            <p style={{ fontSize: "1.45rem", fontWeight: "800", color: "#ffffff", marginTop: "4px" }}>{dailyFiber !== null ? dailyFiber : "--"} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>g</span></p>
           </div>
         </div>
       </div>
